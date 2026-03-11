@@ -1,3 +1,5 @@
+// types/client.ts - Interface Budget Atualizada
+
 export interface Material {
   id: string;
   name: string;
@@ -46,6 +48,7 @@ export interface BudgetItem {
   id: string;
   quantity: number;
   unitPrice: number;
+  discount?: number;
   totalPrice: number;
   service?: {
     name: string;
@@ -62,6 +65,7 @@ export interface Budget {
   id: string;
   name: string;
   totalValue: number;
+  subtotal?: number;  // ✅ ADICIONADO - Valor antes do desconto
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -88,6 +92,10 @@ export interface MaterialListPublicData {
   client: Client;
   budget?: Budget;
   signatures: Signature[];
+}
+
+export interface BudgetPublicData extends Budget {
+  items: BudgetItem[];
 }
 
 export interface MaterialList {

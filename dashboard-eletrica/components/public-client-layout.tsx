@@ -72,7 +72,7 @@ export function PublicClientLayout({
               </div>
               <div>
                 <h1 className="text-xs font-semibold text-card-foreground">
-                  RICARDO SOLUÇÕES ELÉTRICAS
+                  JOÃO SOLUÇÕES ELÉTRICAS
                 </h1>
                 <p className="text-[10px] text-muted-foreground font-extrabold">
                   OLÁ SEJA BEM-VINDO(A),{" "}
@@ -97,14 +97,14 @@ export function PublicClientLayout({
         </div>
       </header>
 
-      <div className="flex">
+      <div className="lg:flex">
         <aside
           className={cn(
-            "fixed inset-y-0 right-0 z-50 w-64 bg-sidebar border-l border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:left-0 lg:right-auto lg:border-r lg:border-l-0 h-screen",
+            "fixed inset-y-0 right-0 z-50 w-64 bg-sidebar border-l border-sidebar-border transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 lg:border-r lg:border-l-0 lg:w-64 lg:flex-shrink-0",
             sidebarOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex flex-col h-full pt-20 lg:pt-6">
+          <div className="flex flex-col h-screen pt-20 lg:pt-6 lg:sticky lg:top-0">
             <nav className="flex-1 px-4 space-y-2">
               {getNavigationItems().map((item) => {
                 const isActive = pathname === item.href;

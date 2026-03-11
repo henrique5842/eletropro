@@ -5,11 +5,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, getStatusColor, getStatusLabel } from "@/lib/utils";
 import type { Budget } from "@/types/client";
-import { Plus, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 
 interface BudgetDetailsModalProps {
   budget: Budget;
@@ -35,58 +36,17 @@ export function BudgetDetailsModal({
     return unitTranslations[unit] || unit;
   };
 
-  const getNewItems = (items: any[]) => {
-    if (!items || items.length === 0) return [];
-
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-
-    return items.filter((item) => {
-      if (!item.createdAt) return false;
-      return new Date(item.createdAt) > twentyFourHoursAgo;
-    });
-  };
-
-  const groupDuplicateItems = (items: any[]) => {
-    if (!items || items.length === 0) return [];
-
-    const groupedItems = items.reduce((acc: any, item: any) => {
-      const key = item.service?.name || item.material?.name || "Item sem nome";
-
-      if (!acc[key]) {
-        acc[key] = {
-          id: `${item.id}_${key}`,
-          service: item.service,
-          material: item.material,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice || item.unitPrice * item.quantity,
-          createdAt: item.createdAt,
-          name: key,
-          unit: item.service?.unit || item.material?.unit || "UNIT",
-          category: item.service?.category || item.material?.category,
-        };
-      } else {
-        acc[key].quantity += item.quantity;
-        acc[key].totalPrice = acc[key].unitPrice * acc[key].quantity;
-      }
-
-      return acc;
-    }, {});
-
-    return Object.values(groupedItems);
-  };
-
   const calculateDiscountData = () => {
-    const subtotal =
-      budget.items?.reduce((sum: number, item: any) => {
-        const qty = parseFloat(String(item.quantity)) || 0;
-        const price = parseFloat(String(item.unitPrice)) || 0;
-        const total = parseFloat(String(item.totalPrice)) || 0;
+    const items = budget.items || [];
+    
+    const subtotal = items.reduce((sum: number, item: any) => {
+      const qty = parseFloat(String(item.quantity)) || 0;
+      const price = parseFloat(String(item.unitPrice)) || 0;
+      const total = parseFloat(String(item.totalPrice)) || 0;
 
-        const itemTotal = total > 0 ? total : price * qty;
-        return sum + itemTotal;
-      }, 0) || 0;
+      const itemTotal = total > 0 ? total : price * qty;
+      return sum + itemTotal;
+    }, 0);
 
     let discountValue = 0;
     const discountAmount = parseFloat(String(budget.discount)) || 0;
@@ -110,70 +70,58 @@ export function BudgetDetailsModal({
     };
   };
 
-  const { subtotal, discountValue, total, hasDiscount } =
-    calculateDiscountData();
+  const { subtotal, discountValue, total, hasDiscount } = calculateDiscountData();
 
-  const newItems = budget.items ? getNewItems(budget.items) : [];
-  const existingItems = budget.items
-    ? budget.items.filter(
-        (item) => !newItems.some((newItem) => newItem.id === item.id)
-      )
-    : [];
+  const items = budget.items || [];
 
-  const groupedNewItems = groupDuplicateItems(newItems);
-  const groupedExistingItems = groupDuplicateItems(existingItems);
-
-  const renderItem = (item: any, isNew: boolean = false) => {
-    const itemName =
-      item.service?.name || item.material?.name || "Item sem nome";
+  const renderItem = (item: any, index: number) => {
+    const itemName = item.name || item.service?.name || item.material?.name || "Item sem nome";
+    const itemDescription = item.description || "";
     const category = item.service?.category || item.material?.category;
-    const unit = item.service?.unit || item.material?.unit;
+    const unit = item.unit || item.service?.unit || item.material?.unit || "UNIT";
+    const quantity = parseFloat(item.quantity) || 0;
+    const unitPrice = parseFloat(item.unitPrice) || 0;
+    const itemTotal = parseFloat(item.totalPrice) || (unitPrice * quantity);
 
     return (
-      <div
-        key={item.id}
-        className={`border rounded-lg p-4 ${
-          isNew ? "border-2 border-green-300 bg-green-50" : "bg-white"
-        }`}
-      >
+      <div key={item.id || index} className="border rounded-lg p-4 bg-white">
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h4 className="font-medium">{itemName}</h4>
-              {isNew && (
-                <Badge className="bg-green-500 text-white text-xs">NOVO</Badge>
-              )}
-              {item.quantity > 1 && (
+              {quantity > 1 && (
                 <Badge variant="outline" className="text-xs">
-                  {item.quantity}x
+                  {quantity}x
                 </Badge>
               )}
             </div>
+            {itemDescription && (
+              <div className="text-sm text-muted-foreground mb-1">
+                {itemDescription}
+              </div>
+            )}
             {category && (
               <div className="text-sm text-muted-foreground">
                 Categoria: {category}
               </div>
             )}
-            {unit && (
-              <div className="text-sm text-muted-foreground">
-                Unidade: {translateUnit(unit)}
-              </div>
-            )}
+            <div className="text-sm text-muted-foreground">
+              Unidade: {translateUnit(unit)}
+            </div>
           </div>
           <div className="text-right">
             <div className="font-semibold">
-              {formatCurrency(item.totalPrice)}
+              {formatCurrency(itemTotal)}
             </div>
             <div className="text-sm text-muted-foreground">
-              {formatCurrency(item.unitPrice)} /{" "}
-              {translateUnit(unit).toLowerCase()}
+              {formatCurrency(unitPrice)} / {translateUnit(unit).toLowerCase()}
             </div>
           </div>
         </div>
 
         <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Quantidade: {item.quantity}</span>
-          <span>Valor unitário: {formatCurrency(item.unitPrice)}</span>
+          <span>Quantidade: {quantity}</span>
+          <span>Valor unitário: {formatCurrency(unitPrice)}</span>
         </div>
       </div>
     );
@@ -189,6 +137,9 @@ export function BudgetDetailsModal({
               {getStatusLabel(budget.status)}
             </Badge>
           </div>
+          <DialogDescription>
+            Detalhes completos do orçamento incluindo itens, valores e informações de pagamento.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -206,37 +157,16 @@ export function BudgetDetailsModal({
                 Total de Itens
               </div>
               <div className="text-lg font-medium">
-                {budget.items?.length || 0}
+                {items.length}
               </div>
             </div>
           </div>
 
-          {groupedNewItems.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Plus className="h-5 w-5 text-green-600" />
-                <h3 className="text-lg font-semibold text-green-700">
-                  + Novos Itens Adicionados
-                </h3>
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  {groupedNewItems.length} novo(s)
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {groupedNewItems.map((item) => renderItem(item, true))}
-              </div>
-            </div>
-          )}
-
           <div>
-            <h3 className="text-lg font-semibold mb-4">
-              {groupedNewItems.length > 0
-                ? "Itens do Orçamento Original"
-                : "Itens do Orçamento"}
-            </h3>
+            <h3 className="text-lg font-semibold mb-4">Itens do Orçamento</h3>
             <div className="space-y-3">
-              {groupedExistingItems.length > 0 ? (
-                groupedExistingItems.map((item) => renderItem(item, false))
+              {items.length > 0 ? (
+                items.map((item, index) => renderItem(item, index))
               ) : (
                 <div className="text-center p-4 text-muted-foreground">
                   Nenhum item no orçamento

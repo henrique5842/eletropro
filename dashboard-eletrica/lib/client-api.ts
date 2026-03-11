@@ -4,6 +4,8 @@ import type {
   RejectionRequest,
   MaterialList,
   MaterialListPublicData,
+  Budget,
+  BudgetPublicData,
 } from "@/types/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -19,8 +21,10 @@ async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  const url = `${API_URL}${endpoint}`;
+
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
         ...options?.headers,
@@ -30,12 +34,13 @@ async function fetchApi<T>(
 
     if (!response.ok) {
       throw new ClientApiError(
-        `API Error: ${response.statusText}`,
+        `API Error: ${response.status} ${response.statusText}`,
         response.status
       );
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     if (error instanceof ClientApiError) {
       throw error;
@@ -46,7 +51,27 @@ async function fetchApi<T>(
 
 export const clientApi = {
   async getPublicClient(accessLink: string): Promise<PublicClient> {
-    return fetchApi<PublicClient>(`/clients/public/${accessLink}`);
+    return fetchApi<PublicClient>(`/public/${accessLink}`);
+  },
+
+  // ===== BUDGET METHODS =====
+  async getBudgets(accessLink: string): Promise<{
+    client: { id: string; fullName: string };
+    budgets: Budget[];
+  }> {
+    return fetchApi<{
+      client: { id: string; fullName: string };
+      budgets: Budget[];
+    }>(`/public/${accessLink}/budgets`);
+  },
+
+  async getBudgetDetails(
+    accessLink: string,
+    budgetId: string
+  ): Promise<BudgetPublicData> {
+    return fetchApi<BudgetPublicData>(
+      `/public/${accessLink}/budgets/${budgetId}`
+    );
   },
 
   async approveBudget(
@@ -54,13 +79,10 @@ export const clientApi = {
     budgetId: string,
     data: ApprovalRequest
   ): Promise<void> {
-    return fetchApi<void>(
-      `/clients/public/${accessLink}/budgets/${budgetId}/approve`,
-      {
-        method: "POST",
-        body: JSON.stringify(data),
-      }
-    );
+    return fetchApi<void>(`/public/${accessLink}/budgets/${budgetId}/approve`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 
   async rejectBudget(
@@ -68,15 +90,13 @@ export const clientApi = {
     budgetId: string,
     data: RejectionRequest
   ): Promise<void> {
-    return fetchApi<void>(
-      `/clients/public/${accessLink}/budgets/${budgetId}/reject`,
-      {
-        method: "POST",
-        body: JSON.stringify(data),
-      }
-    );
+    return fetchApi<void>(`/public/${accessLink}/budgets/${budgetId}/reject`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 
+  // ===== MATERIAL LIST METHODS =====
   async getMaterialLists(accessLink: string): Promise<{
     client: { id: string; fullName: string };
     materialLists: MaterialList[];
@@ -84,7 +104,7 @@ export const clientApi = {
     return fetchApi<{
       client: { id: string; fullName: string };
       materialLists: MaterialList[];
-    }>(`/materialPublic/public/${accessLink}/material-lists`);
+    }>(`/public/${accessLink}/material-lists`);
   },
 
   async getMaterialListDetails(
@@ -92,7 +112,7 @@ export const clientApi = {
     materialListId: string
   ): Promise<MaterialListPublicData> {
     return fetchApi<MaterialListPublicData>(
-      `/materialPublic/public/${accessLink}/material-lists/${materialListId}`
+      `/public/${accessLink}/material-lists/${materialListId}`
     );
   },
 
@@ -102,7 +122,7 @@ export const clientApi = {
     data: ApprovalRequest
   ): Promise<void> {
     return fetchApi<void>(
-      `/materialPublic/public/${accessLink}/material-lists/${materialListId}/approve`,
+      `/public/${accessLink}/material-lists/${materialListId}/approve`,
       {
         method: "POST",
         body: JSON.stringify(data),
@@ -116,7 +136,7 @@ export const clientApi = {
     data: RejectionRequest
   ): Promise<void> {
     return fetchApi<void>(
-      `/materialPublic/public/${accessLink}/material-lists/${materialListId}/reject`,
+      `/public/${accessLink}/material-lists/${materialListId}/reject`,
       {
         method: "POST",
         body: JSON.stringify(data),
